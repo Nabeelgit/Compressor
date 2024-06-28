@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Compress Text File</title>
+<style>
+  body { font-family: Arial, sans-serif; background-color: #1a2421; color: #e4e4e4; }
+  .container { padding: 20px; background-color: #2a5442; border-radius: 8px; }
+  button { margin-top: 10px; background-color: #4a6e5d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+  button:hover { background-color: #3b5b4b; }
+  a { color: #c7f0db; text-decoration: none; }
+  label { display: block; margin-bottom: 5px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <label for="fileInput">Upload your text file:</label>
+  <input type="file" id="fileInput" accept=".txt">
+  <button onclick="compressFile()">Compress</button>
+  <br>
+  <a id="downloadLink" style="display:none;"></a>
+  <br>
+  <a href="decompress.html">Go to Decompress Page</a>
+</div>
+
+<script>
+function compressFile() {
+  const fileInput = document.getElementById('fileInput');
+  const reader = new FileReader();
+
+  reader.onload = function(event) {
+    const text = event.target.result;
+    const compressed = lzCompress(text);
+    const blob = new Blob([compressed], {type: 'application/octet-stream'});
+    createDownloadLink(blob, 'compressed.bin', 'downloadLink');
+  };
+
+  reader.readAsText(fileInput.files[0]);
+}
+
+function lzCompress(input) {
+  let dictionary = {};
+  let data = (input + "").split("");
+  let out = [];
+  let phrase = data[0];
+  let code = 256;
+  for (let i = 1; i < data.length; i++) {
+    let curr = data[i];
+    if (dictionary[phrase + curr] != null) {
+      phrase += curr;
+    } else {
+      out.push(phrase.length > 1 ? dictionary[phrase] : phrase.charCodeAt(0));
+      dictionary[phrase + curr] = code;
+      code++;
+      phrase = curr;
+    }
+  }
+  out.push(phrase.length > 1 ? dictionary[phrase] : phrase.charCodeAt(0));
+  
+  // Convert to Uint16Array for more efficient storage
+  let compressed = new Uint16Array(out);
+  return compressed;
+}
+
+function createDownloadLink(blob, fileName, linkId) {
+  const element = document.getElementById(linkId);
+  element.href = URL.createObjectURL(blob);
+  element.download = fileName;
+  element.style.display = 'inline';
+  element.textContent = `Download ${fileName}`;
+}
+</script>
+</body>
+</html>

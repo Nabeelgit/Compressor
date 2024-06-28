@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Decompress Text File</title>
+<style>
+  body { font-family: Arial, sans-serif; background-color: #1a2421; color: #e4e4e4; }
+  .container { padding: 20px; background-color: #2a5442; border-radius: 8px; }
+  button { margin-top: 10px; background-color: #4a6e5d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+  button:hover { background-color: #3b5b4b; }
+  a { color: #c7f0db; text-decoration: none; }
+  label { display: block; margin-bottom: 5px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <label for="compressedFile">Upload your compressed file:</label>
+  <input type="file" id="compressedFile" accept=".bin">
+  <button onclick="decompressFile()">Decompress</button>
+  <br>
+  <a id="downloadLink" style="display:none;"></a>
+  <br>
+  <a href="index.html">Go to Compress Page</a>
+</div>
+
+<script>
+function decompressFile() {
+  const compressedFileInput = document.getElementById('compressedFile');
+  const reader = new FileReader();
+
+  reader.onload = function(event) {
+    const compressed = new Uint16Array(event.target.result);
+    const decompressed = lzDecompress(compressed);
+    createDownloadLink(decompressed, 'decompressed.txt', 'downloadLink');
+  };
+
+  reader.readAsArrayBuffer(compressedFileInput.files[0]);
+}
+
+function lzDecompress(compressed) {
+  let dictionary = {};
+  let data = Array.from(compressed);
+  let chr = String.fromCharCode(data.shift());
+  let result = chr;
+  let phrase = chr;
+  let code = 256;
+  for (let i = 0; i < data.length; i++) {
+    let curr = data[i];
+    let entry = curr < 256 ? String.fromCharCode(curr) : dictionary[curr] ? dictionary[curr] : (phrase + chr);
+    result += entry;
+    chr = entry.charAt(0);
+    dictionary[code] = phrase + chr;
+    code++;
+    phrase = entry;
+  }
+  return result;
+}
+
+function createDownloadLink(text, fileName, linkId) {
+  const element = document.getElementById(linkId);
+  const file = new Blob([text], {type: 'text/plain'});
+  element.href = URL.createObjectURL(file);
+  element.download = fileName;
+  element.style.display = 'inline';
+  element.textContent = `Download ${fileName}`;
+}
+</script>
+</body>
+</html>
